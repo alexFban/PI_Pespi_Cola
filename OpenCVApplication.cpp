@@ -4,26 +4,104 @@
 #include "stdafx.h"
 #include "common.h"
 
-void read_images(int starting_number, char bv_type[], char dname[], bool debug = false) {
-	char fname[MAX_PATH];
-	int i = starting_number;
+typedef struct IMG {
+	char* path;
+};
+
+typedef struct IMAGES {
+	struct IMG* data;
+	int size;
+	int max_size;
+};
+
+/*
+* Functie pentru a verifica care path-uri au fost testate
+*/
+void test_opened_images(IMAGES* images) {
+	for (int i = 0; i < images->size; i++)
+		std::cout << images->data[i].path << std::endl;
+}
+
+/*
+* Verifica daca mai este destula memorie alocata pentru a adauga un nou path
+*/
+bool index_out_of_bounds(IMAGES images) {
+	return images.max_size <= images.size;
+}
+
+/*
+* Verifica daca imaginea de la path-ul dat chiar exista
+*/
+bool image_exists(char* path) {
+	return (imread(path, IMREAD_COLOR).data);
+}
+
+/*
+* Se ocupa de realocarea dinamica de memorie pentru array-ul de pathuri
+*/
+void resize_image_array(IMAGES* images) {
+	images->max_size += 100;
+	images->data = (IMG*)realloc(images->data, images->max_size * sizeof(IMG));
+}
+
+/*
+* Creaza path-urile intr-un mod dinamic.
+* number - numar dintre paranteze a fisierului
+* bv_type - cola/pepsi
+* dname - train_images/test_images
+*/
+char* create_img_path(int number, char bv_type[], char dname[]) {
+	char* path = (char*)malloc(sizeof(char) * (MAX_PATH + 1));
+	sprintf(path, ".\\..\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, number);
+	return path;
+}
+
+/*
+* Verifica existenta tuturor imaginilor cu number de la starting_number
+* pana la un path care nu exista
+*/
+void open_images(IMAGES* images, int starting_number, char bv_type[], char dname[]) {
 	while (1) {
-		sprintf(fname, ".\\..\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, i);
-		Mat src = imread(fname, IMREAD_COLOR);
-		if (!src.data) break;
-		if (debug) std::cout << "image read" << fname << std::endl;
-		i++;
+		images->size++;
+		if (index_out_of_bounds(*images)) {
+			resize_image_array(images);
+		}
+		int index = images->size - 1;
+		images->data[index].path = create_img_path(starting_number++, bv_type, dname);
+		if (!image_exists(images->data[index].path)) {
+			images->size--;
+			break;
+		}
 	}
 }
 
-void open_batch()
+/*
+* Initializeaza variabila IMAGES, care contine in campul data toate datele necesare pentru
+* prelucrarea imaginilor (momentan contine doar path-ul)
+*/
+IMAGES* initialize_image_array() {
+	IMAGES* images = (IMAGES*)malloc(sizeof(IMAGES));
+	if (images == nullptr) {
+		return nullptr;
+	}
+	images->max_size = 100;
+	images->size = 0;
+	images->data = (IMG*)malloc(images->max_size * sizeof(IMG));
+	return images;
+}
+
+/*
+* Se ocupa de deschiderea imaginilor din subdirectorul train
+*/
+void open_train_batch()
 {
-	read_images(1, "cola", "train_images", true);
-	read_images(1, "pepsi", "train_images", true);
+	IMAGES* images = initialize_image_array();
+	open_images(images, 1, "cola", "train_images");
+	open_images(images, 1, "pepsi", "train_images");
 }
 
 int main()
 {
-	open_batch();
+	open_train_batch();
 	return 0;
 }
