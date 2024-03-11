@@ -356,6 +356,7 @@ MigrationBackup/
 /common.h
 /OpenCVApplication.sln
 /OpenCVApplication.vcxproj
+/OpenCVApplication.cpp.bak
 /stdafx.cpp
 /stdafx.h
 /targetver.h

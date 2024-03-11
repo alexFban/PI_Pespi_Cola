@@ -8,7 +8,7 @@ void read_images(int starting_number, char bv_type[], char dname[], bool debug =
 	char fname[MAX_PATH];
 	int i = starting_number;
 	while (1) {
-		sprintf(fname, ".\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, i);
+		sprintf(fname, ".\\..\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, i);
 		Mat src = imread(fname, IMREAD_COLOR);
 		if (!src.data) break;
 		if (debug) std::cout << "image read" << fname << std::endl;
