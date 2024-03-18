@@ -3,13 +3,18 @@
 
 #include "stdafx.h"
 #include "common.h"
+#include <utility> 
+#include <vector>
+#include <string>
+#include <filesystem>
 
-typedef struct IMG {
+typedef struct ImageData {
 	char* path;
+	char* label;
 };
 
 typedef struct IMAGES {
-	struct IMG* data;
+	struct ImageData* data;
 	int size;
 	int max_size;
 };
@@ -18,8 +23,9 @@ typedef struct IMAGES {
 * Functie pentru a verifica care path-uri au fost testate
 */
 void test_opened_images(IMAGES* images) {
-	for (int i = 0; i < images->size; i++)
-		std::cout << images->data[i].path << std::endl;
+	for (int i = 0; i < images->size; i++) {
+		std::cout << images->data[i].path << " | Label: " << images->data[i].label << std::endl;
+	}
 }
 
 /*
@@ -32,7 +38,7 @@ bool index_out_of_bounds(IMAGES images) {
 /*
 * Verifica daca imaginea de la path-ul dat chiar exista
 */
-bool image_exists(char* path) {
+bool image_exists(std::string path) {
 	return (imread(path, IMREAD_COLOR).data);
 }
 
@@ -41,7 +47,7 @@ bool image_exists(char* path) {
 */
 void resize_image_array(IMAGES* images) {
 	images->max_size += 100;
-	images->data = (IMG*)realloc(images->data, images->max_size * sizeof(IMG));
+	images->data = (ImageData*)realloc(images->data, images->max_size * sizeof(ImageData));
 }
 
 /*
@@ -56,6 +62,12 @@ char* create_img_path(int number, char bv_type[], char dname[]) {
 	return path;
 }
 
+char* create_label(char label_name[]) {
+	char* label = (char*)malloc(sizeof(char) * 6);
+	sprintf(label, "%s", label_name);
+	return label;
+}
+
 /*
 * Verifica existenta tuturor imaginilor cu number de la starting_number
 * pana la un path care nu exista
@@ -68,6 +80,7 @@ void open_images(IMAGES* images, int starting_number, char bv_type[], char dname
 		}
 		int index = images->size - 1;
 		images->data[index].path = create_img_path(starting_number++, bv_type, dname);
+		images->data[index].label = create_label(bv_type);
 		if (!image_exists(images->data[index].path)) {
 			images->size--;
 			break;
@@ -86,7 +99,7 @@ IMAGES* initialize_image_array() {
 	}
 	images->max_size = 100;
 	images->size = 0;
-	images->data = (IMG*)malloc(images->max_size * sizeof(IMG));
+	images->data = (ImageData*)malloc(images->max_size * sizeof(ImageData));
 	return images;
 }
 
@@ -98,6 +111,7 @@ void open_train_batch()
 	IMAGES* images = initialize_image_array();
 	open_images(images, 1, "cola", "train_images");
 	open_images(images, 1, "pepsi", "train_images");
+	test_opened_images(images);
 }
 
 int main()
