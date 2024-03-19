@@ -10,7 +10,8 @@
 
 typedef struct ImageData {
 	char* path;
-	char* label;
+	int label;
+	int generated_label;
 };
 
 typedef struct IMAGES {
@@ -19,6 +20,9 @@ typedef struct IMAGES {
 	int max_size;
 };
 
+
+
+//////////////////////////////////////////Functionality testing////////////////////////////////////////////
 /*
 * Functie pentru a verifica care path-uri au fost testate
 */
@@ -28,18 +32,34 @@ void test_opened_images(IMAGES* images) {
 	}
 }
 
+bool label_good(ImageData data) {
+	return (data.label == data.generated_label);
+}
+
+void print_accuracy(int correct_labels, int total_labels) {
+	float accuracy = (float)correct_labels / total_labels;
+	std::cout << "Image labeling accuracy: " << accuracy << std::endl;
+}
+
+void test_accuracy(IMAGES* images) {
+	int correct_labels = 0;
+	for (int i = 0; i < images->size; i++) {
+		if (label_good(images->data[i])) {
+			correct_labels++;
+		}
+	}
+	print_accuracy(correct_labels, images->size);
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////Memory management////////////////////////////////////////////////
 /*
 * Verifica daca mai este destula memorie alocata pentru a adauga un nou path
 */
 bool index_out_of_bounds(IMAGES images) {
 	return images.max_size <= images.size;
-}
-
-/*
-* Verifica daca imaginea de la path-ul dat chiar exista
-*/
-bool image_exists(std::string path) {
-	return (imread(path, IMREAD_COLOR).data);
 }
 
 /*
@@ -50,6 +70,25 @@ void resize_image_array(IMAGES* images) {
 	images->data = (ImageData*)realloc(images->data, images->max_size * sizeof(ImageData));
 }
 
+/*
+* Initializeaza variabila IMAGES, care contine in campul data toate datele necesare pentru
+* prelucrarea imaginilor (momentan contine doar path-ul)
+*/
+IMAGES* initialize_image_array() {
+	IMAGES* images = (IMAGES*)malloc(sizeof(IMAGES));
+	if (images == nullptr) {
+		return nullptr;
+	}
+	images->max_size = 100;
+	images->size = 0;
+	images->data = (ImageData*)malloc(images->max_size * sizeof(ImageData));
+	return images;
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////Image management////////////////////////////////////////////////
 /*
 * Creaza path-urile intr-un mod dinamic.
 * number - numar dintre paranteze a fisierului
@@ -62,10 +101,20 @@ char* create_img_path(int number, char bv_type[], char dname[]) {
 	return path;
 }
 
-char* create_label(char label_name[]) {
-	char* label = (char*)malloc(sizeof(char) * 6);
-	sprintf(label, "%s", label_name);
-	return label;
+/*
+* Creaza label-ul imaginilor, utilizand numele fisierului
+* 0 = cola
+* 1 = pepsi
+*/
+int create_label(char label_name[]) {
+	return (label_name == "cola") ? 0 : 1;
+}
+
+/*
+* Verifica daca imaginea de la path-ul dat chiar exista
+*/
+bool image_exists(std::string path) {
+	return (imread(path, IMREAD_COLOR).data);
 }
 
 /*
@@ -87,21 +136,9 @@ void open_images(IMAGES* images, int starting_number, char bv_type[], char dname
 		}
 	}
 }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
-* Initializeaza variabila IMAGES, care contine in campul data toate datele necesare pentru
-* prelucrarea imaginilor (momentan contine doar path-ul)
-*/
-IMAGES* initialize_image_array() {
-	IMAGES* images = (IMAGES*)malloc(sizeof(IMAGES));
-	if (images == nullptr) {
-		return nullptr;
-	}
-	images->max_size = 100;
-	images->size = 0;
-	images->data = (ImageData*)malloc(images->max_size * sizeof(ImageData));
-	return images;
-}
+
 
 /*
 * Se ocupa de deschiderea imaginilor din subdirectorul train
