@@ -18,9 +18,28 @@ typedef struct IMAGES {
 	struct ImageData* data;
 	int size;
 	int max_size;
+	float accuracy;
 };
 
 
+
+/////////////////////////////////////////////////Headers///////////////////////////////////////////////////
+void test_opened_images(IMAGES*);
+bool label_good(ImageData);
+void print_accuracy(IMAGES*);
+bool index_out_of_bounds(IMAGES);
+void resize_image_array(IMAGES*);
+IMAGES* initialize_image_array();
+int generate_label();
+void process_images(IMAGES*);
+void calculate_accuracy(IMAGES*);
+char* create_img_path(int, char, char);
+int assign_label(char);
+bool image_exists(char*);
+void open_images(IMAGES*, int, char, char);
+void process_images(IMAGES*);
+void open_train_batch();
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////Functionality testing////////////////////////////////////////////
 /*
@@ -28,7 +47,8 @@ typedef struct IMAGES {
 */
 void test_opened_images(IMAGES* images) {
 	for (int i = 0; i < images->size; i++) {
-		std::cout << images->data[i].path << " | Label: " << images->data[i].label << std::endl;
+		std::cout << images->data[i].path << " | Label: " << images->data[i].label <<
+					 " | Generated Label: " << images->data[i].generated_label << std::endl;
 	}
 }
 
@@ -36,19 +56,8 @@ bool label_good(ImageData data) {
 	return (data.label == data.generated_label);
 }
 
-void print_accuracy(int correct_labels, int total_labels) {
-	float accuracy = (float)correct_labels / total_labels;
-	std::cout << "Image labeling accuracy: " << accuracy << std::endl;
-}
-
-void test_accuracy(IMAGES* images) {
-	int correct_labels = 0;
-	for (int i = 0; i < images->size; i++) {
-		if (label_good(images->data[i])) {
-			correct_labels++;
-		}
-	}
-	print_accuracy(correct_labels, images->size);
+void print_accuracy(IMAGES* images) {
+	std::cout << "Image labeling accuracy: " << images->accuracy << std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -88,6 +97,31 @@ IMAGES* initialize_image_array() {
 
 
 
+//////////////////////////////////////////Label management////////////////////////////////////////////////
+void calculate_accuracy(IMAGES* images) {
+	int correct_labels = 0;
+	for (int i = 0; i < images->size; i++) {
+		if (label_good(images->data[i])) {
+			correct_labels++;
+		}
+	}
+	images->accuracy = (float)correct_labels / images->size;
+}
+
+int generate_label() {
+	return rand() % 2;
+}
+
+void assign_image_labels(IMAGES* images) {
+	srand(time(NULL));
+	for (int i = 0; i < images->size; i++) {
+		images->data[i].generated_label = generate_label();
+	}
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 //////////////////////////////////////////Image management////////////////////////////////////////////////
 /*
 * Creaza path-urile intr-un mod dinamic.
@@ -106,14 +140,14 @@ char* create_img_path(int number, char bv_type[], char dname[]) {
 * 0 = cola
 * 1 = pepsi
 */
-int create_label(char label_name[]) {
+int assign_label(char label_name[]) {
 	return (label_name == "cola") ? 0 : 1;
 }
 
 /*
 * Verifica daca imaginea de la path-ul dat chiar exista
 */
-bool image_exists(std::string path) {
+bool image_exists(char* path) {
 	return (imread(path, IMREAD_COLOR).data);
 }
 
@@ -129,7 +163,8 @@ void open_images(IMAGES* images, int starting_number, char bv_type[], char dname
 		}
 		int index = images->size - 1;
 		images->data[index].path = create_img_path(starting_number++, bv_type, dname);
-		images->data[index].label = create_label(bv_type);
+		images->data[index].label = assign_label(bv_type);
+		images->data[index].generated_label = -1;
 		if (!image_exists(images->data[index].path)) {
 			images->size--;
 			break;
@@ -145,14 +180,27 @@ void open_images(IMAGES* images, int starting_number, char bv_type[], char dname
 */
 void open_train_batch()
 {
-	IMAGES* images = initialize_image_array();
-	open_images(images, 1, "cola", "train_images");
-	open_images(images, 1, "pepsi", "train_images");
-	test_opened_images(images);
+	IMAGES* images_train = initialize_image_array();
+	open_images(images_train, 1, "cola", "train_images");
+	open_images(images_train, 1, "pepsi", "train_images");
+}
+
+/*
+* Se ocupa de deschiderea imaginilor din subdirectorul train
+*/
+void open_test_batch()
+{
+	IMAGES* images_test = initialize_image_array();
+	open_images(images_test, 149, "cola", "test_images");
+	open_images(images_test, 204, "cola", "test_images");
+	open_images(images_test, 230, "cola", "test_images");
+	open_images(images_test, 150, "pepsi", "test_images");
+	open_images(images_test, 233, "pepsi", "test_images");
 }
 
 int main()
 {
 	open_train_batch();
+	open_test_batch();
 	return 0;
 }
