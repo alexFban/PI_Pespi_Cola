@@ -123,6 +123,15 @@ void assign_image_labels(IMAGES* images) {
 
 
 //////////////////////////////////////////Image management////////////////////////////////////////////////
+void test_labels(IMAGES* images, int nr_of_test = 1) {
+	for (int i = 0; i < nr_of_test; i++) {
+		assign_image_labels(images);
+		calculate_accuracy(images);
+		std::cout << "Accuracy " << i + 1 << ": " << images->accuracy << std::endl;
+		Sleep(1000);
+	}
+}
+
 /*
 * Creaza path-urile intr-un mod dinamic.
 * number - numar dintre paranteze a fisierului
@@ -183,6 +192,7 @@ void open_train_batch()
 	IMAGES* images_train = initialize_image_array();
 	open_images(images_train, 1, "cola", "train_images");
 	open_images(images_train, 1, "pepsi", "train_images");
+	test_labels(images_train, 10);
 }
 
 /*
