@@ -8,6 +8,8 @@
 #include <string>
 #include <filesystem>
 
+#define DECISION_PRAG 2
+
 typedef struct ImageData {
 	char* path;
 	int label;
@@ -40,6 +42,8 @@ int generate_label_rand();
 void assign_image_labels(IMAGES*);
 void calculate_accuracy(IMAGES*);
 
+cv::Mat toBinary_Red(char* img_path);
+cv::Mat toBinary_Blue(char* img_path);
 std::pair<float, float> average_color_intensity(cv::Mat);
 char* create_img_path(int, char, char);
 int assign_label(char);
@@ -160,6 +164,41 @@ void calculate_accuracy(IMAGES* images) {
 	images->accuracy = (float)correct_labels / images->size;
 }
 
+int generate_label_binary(char* path) {
+	cv::Mat r_bin_img = toBinary_Red(path);
+	cv::Mat b_bin_img = toBinary_Blue(path);
+
+	int height = r_bin_img.rows;
+	int width = r_bin_img.cols;
+
+	int r_black = 0, b_black = 0;
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			switch (r_bin_img.at<uchar>(i, j))
+			{
+			case 0: {
+				r_black++;
+				break;
+			}
+			default:
+				break;
+			}
+
+			switch (b_bin_img.at<uchar>(i, j))
+			{
+			case 0: {
+				b_black++;
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
+	return r_black > b_black ? 0 : 1;
+}
+
 int generate_label_colour(char* path) {
 	cv::Mat img = cv::imread(path);
 
@@ -180,7 +219,7 @@ void assign_image_labels(IMAGES* images) {
 	srand(time(NULL));
 	for (int i = 0; i < images->size; i++) {
 		//images->data[i].generated_label = generate_label_rand();
-		images->data[i].generated_label = generate_label_colour(images->data[i].path);
+		images->data[i].generated_label = generate_label_binary(images->data[i].path);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -188,6 +227,48 @@ void assign_image_labels(IMAGES* images) {
 
 
 //////////////////////////////////////////Image management////////////////////////////////////////////////
+
+cv::Mat toBinary_Red(char* img_path) {
+	cv::Mat src = cv::imread(img_path, IMREAD_COLOR);
+
+	int height = src.rows;
+	int width = src.cols;
+
+	Mat dst = Mat(height, width, CV_8UC1);
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			Vec3b colors = src.at<Vec3b>(i, j);
+			if (colors[2] > colors[0] && abs(colors[2] - colors[1]) > DECISION_PRAG && abs(colors[2] - colors[0]) > DECISION_PRAG && colors[1] < 80) {
+				dst.at<uchar>(i, j) = 0;
+			}
+			else {
+				dst.at<uchar>(i, j) = 255;
+			}
+		}
+	return dst;
+}
+
+cv::Mat toBinary_Blue(char* img_path) {
+	cv::Mat src = cv::imread(img_path, IMREAD_COLOR);
+
+	int height = src.rows;
+	int width = src.cols;
+
+	Mat dst = Mat(height, width, CV_8UC1);
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++) {
+			Vec3b colors = src.at<Vec3b>(i, j);
+			if (colors[0] > colors[2] && abs(colors[0] - colors[1]) > DECISION_PRAG && abs(colors[0] - colors[2]) > DECISION_PRAG) {
+				dst.at<uchar>(i, j) = 0;
+			}
+			else {
+				dst.at<uchar>(i, j) = 255;
+			}
+		}
+	return dst;
+}
 
 //calculeaza intensitatea culorii pentru rosu si albastru
 std::pair<float, float> average_color_intensity(cv::Mat image) {
@@ -278,6 +359,6 @@ int main()
 {
 	set_float_precision();
 	open_train_batch();
-	open_test_batch();
+	//open_test_batch();
 	return 0;
 }
