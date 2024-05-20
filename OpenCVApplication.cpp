@@ -67,17 +67,28 @@ void generate_class_accuracy_graph(IMAGES* images) {
 	int correct_pepsi = 0;
 	int total_pepsi = 0;
 
+	// folder pentru fisiere care nu sunt clasificate corect
+	std::filesystem::create_directory("misclassified");
+
 	for (int i = 0; i < images->size; i++) {
 		if (images->data[i].label == 0) {
 			total_coca_cola++;
 			if (images->data[i].generated_label == images->data[i].label) {
 				correct_coca_cola++;
 			}
+			else {
+				// le mut si le renumesc
+				std::filesystem::rename(images->data[i].path, "misclassified/new_cola (" + std::to_string(i+1) + ").jpg.jpg");
+			}
 		}
 		else if (images->data[i].label == 1) {
 			total_pepsi++;
 			if (images->data[i].generated_label == images->data[i].label) {
 				correct_pepsi++;
+			}
+			else {
+				// le mut si le renumesc
+				std::filesystem::rename(images->data[i].path, "misclassified/new_pepsi (" + std::to_string(i+1) + ").jpg.jpg");
 			}
 		}
 	}
@@ -284,7 +295,7 @@ std::pair<float, float> average_color_intensity(cv::Mat image) {
 */
 char* create_img_path(int number, char bv_type[], char dname[]) {
 	char* path = (char*)malloc(sizeof(char) * (MAX_PATH + 1));
-	sprintf(path, ".\\..\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, number);
+	sprintf(path, ".\\Images\\%s\\new_%s (%d).jpg.jpg", dname, bv_type, number);
 	return path;
 }
 
