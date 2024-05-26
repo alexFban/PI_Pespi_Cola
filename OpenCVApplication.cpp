@@ -208,7 +208,7 @@ bool test_size(cv::Mat img) {
 		}
 	}
 
-	int threshold = 27000;
+	int threshold = 23000;
 	int L = (right_down_j - left_up_j);
 	int l = (right_down_i - left_up_i);
 
@@ -430,9 +430,6 @@ void open_test_batch()
 
 int main()
 {
-	/*imshow("red", toBinary_Red(".\\..\\Images\\train_images\\new_cola (79).jpg.jpg"));
-	imshow("blue", toBinary_Blue(".\\..\\Images\\train_images\\new_cola (79).jpg.jpg"));
-	waitKey(0);*/
 	set_float_precision();
 	open_train_batch();
 	open_test_batch();
