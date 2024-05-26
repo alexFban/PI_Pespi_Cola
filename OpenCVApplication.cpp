@@ -55,10 +55,26 @@ void open_test_batch();
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////Functionality testing////////////////////////////////////////////
-void print_accuracy_graph(float class_one_accuracy, float class_two_accuracy, const char* class_one_name = "COLA", const char* class_two_name = "PEPSI") {
+void print_accuracy_graph(float class_one_total, float class_two_total, float class_one_correct, float class_two_correct, const char* class_one_name = "COLA", const char* class_two_name = "PEPSI") {
 	std::cout << "\t" << class_one_name << "\t\t" << class_two_name << std::endl;
-	std::cout << class_one_name << "\t" << class_one_accuracy << "\t\t" << 1 - class_one_accuracy << std::endl;
-	std::cout << class_two_name << "\t" << 1 - class_two_accuracy << "\t\t" << class_two_accuracy << '\n' << std::endl;
+	std::cout << class_one_name << "\t" << class_one_correct << "\t\t" << class_one_total - class_one_correct << std::endl;
+	std::cout << class_two_name << "\t" << class_two_total - class_two_correct << "\t\t" << class_two_correct << '\n' << std::endl;
+}
+
+void save_misclassified(const char* img_path) {
+	cv::Mat img = imread(img_path, IMREAD_COLOR);
+
+	int i;
+	for (i = strlen(img_path) - 1; i >= 0; i--) {
+		if (img_path[i] == '\\') {
+			break;
+		}
+	}
+
+	char* path = (char*)malloc(sizeof(char) * (MAX_PATH + 1));
+	sprintf(path, ".\\..\\Images\\misclassified%s", img_path + i);
+
+	imwrite(path, img);
 }
 
 void generate_class_accuracy_graph(IMAGES* images) {
@@ -73,19 +89,22 @@ void generate_class_accuracy_graph(IMAGES* images) {
 			if (images->data[i].generated_label == images->data[i].label) {
 				correct_coca_cola++;
 			}
+			else {
+				save_misclassified(images->data[i].path);
+			}
 		}
 		else if (images->data[i].label == 1) {
 			total_pepsi++;
 			if (images->data[i].generated_label == images->data[i].label) {
 				correct_pepsi++;
 			}
+			else {
+				save_misclassified(images->data[i].path);
+			}
 		}
 	}
 
-	float accuracy_coca_cola = (float)correct_coca_cola / total_coca_cola;
-	float accuracy_pepsi = (float)correct_pepsi / total_pepsi;
-
-	print_accuracy_graph(accuracy_coca_cola, accuracy_pepsi);
+	print_accuracy_graph(total_coca_cola, total_pepsi, correct_coca_cola, correct_pepsi);
 }
 
 void test_labels(IMAGES* images, int nr_of_test = 1, bool class_graph = false) {
@@ -164,6 +183,39 @@ void calculate_accuracy(IMAGES* images) {
 	images->accuracy = (float)correct_labels / images->size;
 }
 
+bool test_size(cv::Mat img) {
+	int height = img.rows;
+	int width = img.cols;
+
+	int left_up_i = height - 1, left_up_j = width - 1;
+	int right_down_i = 0, right_down_j = 0;
+
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if (img.at<uchar>(i, j) == 0) {
+				if (i < left_up_i && j < left_up_j) {
+					left_up_i = i;
+					left_up_j = j;
+				}
+				if (i > right_down_i && j > right_down_j) {
+					right_down_i = i;
+					right_down_j = j;
+				}
+			}
+		}
+	}
+
+	int threshold = 27000;
+	int L = (right_down_j - left_up_j);
+	int l = (right_down_i - left_up_i);
+
+	if (l * L > threshold) {
+		return false;
+	}
+
+	return true;
+}
+
 int generate_label_binary(char* path) {
 	cv::Mat r_bin_img = toBinary_Red(path);
 	cv::Mat b_bin_img = toBinary_Blue(path);
@@ -173,8 +225,8 @@ int generate_label_binary(char* path) {
 
 	int r_black = 0, b_black = 0;
 
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++) {
+	for (int i = 20; i < height - 20; i++)
+		for (int j = 20; j < width - 20; j++) {
 			switch (r_bin_img.at<uchar>(i, j))
 			{
 			case 0: {
@@ -196,7 +248,25 @@ int generate_label_binary(char* path) {
 			}
 		}
 
-	return r_black > b_black ? 0 : 1;
+	switch (r_black > b_black)
+	{
+		case true: {
+			bool good = test_size(r_bin_img);
+			if (good) {
+				return 0;
+			}
+
+			return 1;
+		}
+		case false: {
+			bool good = test_size(b_bin_img);
+			if (good) {
+				return 1;
+			}
+
+			return 0;
+		}
+	}
 }
 
 int generate_label_colour(char* path) {
@@ -239,7 +309,7 @@ cv::Mat toBinary_Red(char* img_path) {
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++) {
 			Vec3b colors = src.at<Vec3b>(i, j);
-			if (colors[2] > colors[0] && abs(colors[2] - colors[1]) > DECISION_PRAG && abs(colors[2] - colors[0]) > DECISION_PRAG && colors[1] < 80) {
+			if (((i > 20 && j > 20) && (i < height - 20 && j < height - 20)) && (colors[2] > colors[0] && abs(colors[2] - colors[1]) > DECISION_PRAG && abs(colors[2] - colors[0]) > DECISION_PRAG && colors[1] < 80)) {
 				dst.at<uchar>(i, j) = 0;
 			}
 			else {
@@ -260,7 +330,7 @@ cv::Mat toBinary_Blue(char* img_path) {
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++) {
 			Vec3b colors = src.at<Vec3b>(i, j);
-			if (colors[0] > colors[2] && abs(colors[0] - colors[1]) > DECISION_PRAG && abs(colors[0] - colors[2]) > DECISION_PRAG) {
+			if (((i > 20 && j > 20) && (i < height - 20 && j < height - 20)) && (colors[0] > colors[2] && abs(colors[0] - colors[1]) > DECISION_PRAG && abs(colors[0] - colors[2]) > DECISION_PRAG)) {
 				dst.at<uchar>(i, j) = 0;
 			}
 			else {
@@ -357,8 +427,11 @@ void open_test_batch()
 
 int main()
 {
+	/*imshow("red", toBinary_Red(".\\..\\Images\\train_images\\new_cola (79).jpg.jpg"));
+	imshow("blue", toBinary_Blue(".\\..\\Images\\train_images\\new_cola (79).jpg.jpg"));
+	waitKey(0);*/
 	set_float_precision();
 	open_train_batch();
-	//open_test_batch();
+	open_test_batch();
 	return 0;
 }
