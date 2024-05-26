@@ -36,5 +36,5 @@ We can observe that on the blue binary image there are some "artifacts". Those b
 ![example image 1 blue binary shrunk](https://raw.githubusercontent.com/alexFban/PI_Pespi_Cola/main/md_images/new_cola_15_bb_shrunk.PNG)
 Finally we got rid of those artifacts that made it seem like there was more blue than red. But we still had a problem. What if there was an image of a coca-cola can taken underwater? Well, there is, and the program still labeled it wrong. So the solution we used for this problem was to verify the size of the black "objects" in each binary image. If the "object" was bigger than a selected threshold then we reverse-labeled the image. Here is an example:
 ![example image 2](https://raw.githubusercontent.com/alexFban/PI_Pespi_Cola/main/md_images/new_cola_88.jpg)
-![example image 2 blue binary sjrunk](https://raw.githubusercontent.com/alexFban/PI_Pespi_Cola/main/md_images/new_cola_88.jpg)
+![example image 2 blue binary shrunk](https://raw.githubusercontent.com/alexFban/PI_Pespi_Cola/main/md_images/new_cola_88_bb_shrunk.PNG)
 In this blue binary image we can observe that there appears to be a black box, which is actually the ocean, so we run the image thru a method that tells us if the box is too big, and if the answer is yes, then we can ignore the black box.
